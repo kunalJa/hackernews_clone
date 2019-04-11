@@ -1,6 +1,7 @@
 import graphene
 from graphene_django import DjangoObjectType
 from .models import Link
+from users.schema import UserType
 
 class LinkType(DjangoObjectType):
     class Meta:
@@ -16,24 +17,28 @@ class CreateLink(graphene.Mutation):
     id = graphene.Int()
     url = graphene.String()
     description = graphene.String()
+    posted_by = graphene.Field(UserType)
 
     class Arguments:
         url = graphene.String(required=True)
         description = graphene.String()
 
     def mutate(self, info, url, description):
-        link = Link(url = url, description = description)
+        user = info.context.user or None
+        link = Link(url = url, description = description, posted_by = user)
         link.save()
         return CreateLink(
             id = link.id,
             url = link.url,
-            description = link.description
+            description = link.description,
+            posted_by = link.posted_by
         )
 
 class RemoveLink(graphene.Mutation):
     id = graphene.Int()
     url = graphene.String()
     description = graphene.String()
+    posted_by = graphene.Field(UserType)
 
     class Arguments:
         id = graphene.Int(required=True)
@@ -44,7 +49,8 @@ class RemoveLink(graphene.Mutation):
         return RemoveLink(
             id = id,
             url = link.url,
-            description = link.description
+            description = link.description,
+            posted_by = link.posted_by
         )
 
 class Mutation(graphene.ObjectType):
